@@ -8,12 +8,12 @@ import (
 	"sync"
 	"time"
 	"os"
-	"github.com/fatih/color"
-	"math/rand"
-	"bufio"
-	"io"
 	"log"
 	"net/url"
+	"io/ioutil"
+
+	"github.com/fatih/color"
+	"math/rand"
 )
 
 type Result struct {
@@ -27,19 +27,12 @@ func main() {
 	urlPtr := flag.String("url", "", "URL to make requests to")
 	headersFilePtr := flag.String("headers", "", "File containing headers for requests")
 	flag.Parse()
+
 	log.SetFlags(0)
 
     // Print tool banner
-    log.Print(`
+    printBanner()
 
-
-	   __               __                      
-	  / /  ___ ___  ___/ /__ _______ _    _____ 
-	 / _ \/ -_) _ \/ _  / -_) __/ _ \ |/|/ / _ \
-	/_//_/\__/\_,_/\_,_/\__/_/ / .__/__,__/_//_/
-	                          /_/               
-    
-`)
 	if *urlPtr == "" {
 		fmt.Println("Please provide a valid URL using the -url flag")
 		return
@@ -87,23 +80,24 @@ func main() {
 	printResults(results)
 }
 
+func printBanner() {
+	fmt.Print(`
+	   __               __                      
+	  / /  ___ ___  ___/ /__ _______ _    _____ 
+	 / _ \/ -_) _ \/ _  / -_) __/ _ \ |/|/ / _ \
+	/_//_/\__/\_,_/\_,_/\__/_/ / .__/__,__/_//_/
+	                          /_/               
+    
+`)
+}
+
 func readHeadersFromFile(filename string) ([]string, error) {
-	file, err := os.Open(filename)
+	fileContent, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
 
-	headers := make([]string, 0)
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		headers = append(headers, scanner.Text())
-	}
-
-	if err := scanner.Err(); err != nil {
-		return nil, err
-	}
-
+	headers := strings.Split(string(fileContent), "\n")
 	return headers, nil
 }
 
@@ -133,7 +127,7 @@ func makeRequest(url, header string) (*http.Response, error) {
 		return response, nil
 	}
 
-	body, err := io.ReadAll(response.Body)
+	body, err := ioutil.ReadAll(response.Body)
 	if err == nil {
 		response.ContentLength = int64(len(body))
 	}
